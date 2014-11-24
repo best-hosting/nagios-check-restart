@@ -1,0 +1,4 @@
+DPkg
+{
+Post-Invoke {"[ ! -e /usr/local/sbin/checkrestart ] || /usr/local/sbin/checkrestart";};
+};
