@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -euf
+
+readonly save_stdout=7
+eval "exec $save_stdout>&1"
+readonly cache_file="/var/cache/nagios3/$(basename "$0").cache"
+readonly ret_crit=2
+readonly ret_warn=1
+readonly ret_ok=0
+readonly nl='
+'
+
+res="$(/usr/sbin/checkrestart "$@" \
+    | tee "/proc/self/fd/$save_stdout" \
+    | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$'
+)" || true
+
+n_progs="$(echo "$res" | sed -n -e'/program/s/^(\([[:digit:]]\+\).*/\1/p')"
+n_pkgs="$(echo "$res" | sed -n -e'/package/s/^\.*(\([[:digit:]]\+\).*/\1/p')"
+n_progs="${n_progs:-0}"
+n_pkgs="${n_pkgs:-0}"
+if [ "$n_pkgs" -gt 0 ]; then
+    ret="$ret_crit"
+elif [ "$n_progs" -gt 0 ]; then
+    ret="$ret_warn"
+else
+    ret="$ret_ok"
+fi
+
+{
+    echo "$ret"
+    echo "${res:-OK}" | paste -d, -s
+} > "$cache_file"
