@@ -24,12 +24,14 @@ export builddir
 # them as plugin names. Variables here mean not real sources, binaries and
 # installed files of plugin (this Makefile can't know them), but rather
 # plugin's source directory (containing its Makefile), plugin's build
-# directory and non-existent 'install/plugin_name' directory to denote
-# plugin real 'install' target.
+# directory and non-existent 'install/plugin_name' and 'delete/plugin'
+# directories, which denote plugin's real 'install' and 'delete' targets
+# correspondingly.
 sources		    := $(dir $(wildcard $(srcdir)/*/Makefile))
 plugins		    := $(lastword $(subst /, , $(sources)))
 binaries	    := $(addprefix $(builddir)/, $(plugins))
 installed	    := $(addprefix install/, $(plugins))
+deleted		    := $(addprefix delete/, $(plugins))
 
 all : $(plugins)
 	
@@ -48,4 +50,12 @@ $(installed) : install/% : $(builddir)/%
 .PHONY: install
 install : $(installed)
 	
+
+.PHONY: $(deleted)
+$(deleted) : delete/% : 
+	make -C $(srcdir)/$* delete || true
+
+.PHONY: delete
+delete : $(deleted)
+	$(rmdir) $(builddir)
 
