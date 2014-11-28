@@ -3,6 +3,10 @@
 .*.swo
 *~
 
+# build
+build/
+src/*/build
+
 # vim and tmux sessions
 *.vim
 *.gvim
