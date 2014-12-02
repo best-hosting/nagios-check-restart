@@ -48,13 +48,13 @@ $(binaries) $(configs) : $(builddir)/% : %
 
 # Install per-destination targets.
 $(sbindir)/% : $(builddir)/%
-	$(install_program) -t $(sbindir) $< || true
+	$(install_program) -t $(sbindir) $<
 
 $(confdir_apt)/% : $(builddir)/%
-	$(install_data) -t $(confdir_apt) $< || true
+	$(install_data) -t $(confdir_apt) $<
 
 $(confdir_nrpe)/% : $(builddir)/%
-	$(install_data) -t $(confdir_nrpe) $< || true
+	$(install_data) -t $(confdir_nrpe) $<
 
 .PHONY: install
 install : $(installed)
