@@ -28,7 +28,7 @@ export builddir
 # directories, which denote plugin's real 'install' and 'delete' targets
 # correspondingly.
 sources		    := $(dir $(wildcard $(srcdir)/*/Makefile))
-plugins		    := $(lastword $(subst /, , $(sources)))
+plugins		    := $(notdir $(sources:/=))
 binaries	    := $(addprefix $(builddir)/, $(plugins))
 installed	    := $(addprefix install/, $(plugins))
 deleted		    := $(addprefix delete/, $(plugins))
