@@ -46,6 +46,11 @@ $(binaries) $(configs) : $(builddir)/% : %
 	@mkdir -pv $(builddir)
 	@cp -v $< $@
 
+.PHONY: clean
+clean : 
+	$(rm) $(binaries) $(configs)
+	$(rmdir) $(builddir)
+
 # Install per-destination targets.
 $(sbindir)/% : $(builddir)/%
 	$(install_program) -t $(sbindir) $<
@@ -62,7 +67,5 @@ install : $(installed)
 
 .PHONY: delete
 delete : 
-	$(rm) $(binaries) $(configs)
 	$(rm) $(installed)
-	$(rmdir) $(builddir)
 
