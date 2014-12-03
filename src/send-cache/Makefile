@@ -37,17 +37,19 @@ $(binaries) : $(builddir)/% : %.sh
 	mkdir -pv $(builddir)
 	cp $< $@
 
-$(libdir) :
-	$(mkinstalldir) $(libdir)
+.PHONY: clean
+clean : 
+	$(rm) $(binaries)
+	$(rmdir) $(builddir)
+
 $(installed) : $(libdir)/% : $(builddir)/%
 	$(install_program) -t $(libdir) $<
 
 .PHONY: install
-install : $(libdir) $(installed)
+install : $(installed)
+	
 
 .PHONY: delete
 delete : 
-	$(rm) $(binaries)
 	$(rm) $(installed)
-	$(rmdir) $(builddir)
 
