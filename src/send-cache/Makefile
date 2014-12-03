@@ -40,7 +40,7 @@ $(binaries) : $(builddir)/% : %.sh
 $(libdir) :
 	$(mkinstalldir) $(libdir)
 $(installed) : $(libdir)/% : $(builddir)/%
-	$(install_program) -t $(libdir) $(binaries)
+	$(install_program) -t $(libdir) $<
 
 .PHONY: install
 install : $(libdir) $(installed)
