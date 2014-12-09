@@ -9,11 +9,20 @@ readonly conf_file='/etc/default/checkrestart'
 readonly ret_crit=2
 readonly ret_warn=1
 readonly ret_ok=0
+readonly True=1
+readonly False=0
 readonly nl='
 '
 
 if [ -e "$conf_file" ]; then
     . "$conf_file"
+fi
+
+# Check kernel upgrade.
+kern_inst="$(dpkg-query -f '${Version}\n' -W "linux-image-$(uname -r)")"
+kern_upgraded=$False
+if ! cat /proc/version | grep -q -F -e "$kern_inst"; then
+    kern_upgraded=$True
 fi
 
 # Expect OPTIONS variable from $conf_file.
@@ -26,7 +35,12 @@ n_progs="$(echo "$res" | sed -n -e'/program/s/^(\([[:digit:]]\+\).*/\1/p')"
 n_pkgs="$(echo "$res" | sed -n -e'/package/s/^\.*(\([[:digit:]]\+\).*/\1/p')"
 n_progs="${n_progs:-0}"
 n_pkgs="${n_pkgs:-0}"
-if [ "$n_pkgs" -gt 0 ]; then
+if [ "$kern_upgraded" = "$True" ]; then
+    echo "Kernel have been upgraded."
+    res="${res:+kernel upgraded, $res}"
+    res="${res:-kernel upgraded}"
+    ret="$ret_crit"
+elif [ "$n_pkgs" -gt 0 ]; then
     ret="$ret_crit"
 elif [ "$n_progs" -gt 0 ]; then
     ret="$ret_warn"
