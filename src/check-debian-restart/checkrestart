@@ -5,13 +5,19 @@ set -euf
 readonly save_stdout=7
 eval "exec $save_stdout>&1"
 readonly cache_file="/var/cache/nagios3/$(basename "$0").cache"
+readonly conf_file='/etc/default/checkrestart'
 readonly ret_crit=2
 readonly ret_warn=1
 readonly ret_ok=0
 readonly nl='
 '
 
-res="$(/usr/sbin/checkrestart "$@" \
+if [ -e "$conf_file" ]; then
+    . "$conf_file"
+fi
+
+# Expect OPTIONS variable from $conf_file.
+res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" \
     | tee "/proc/self/fd/$save_stdout" \
     | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$'
 )" || true

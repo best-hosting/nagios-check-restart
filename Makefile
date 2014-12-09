@@ -30,6 +30,7 @@ export builddir
 sources		    := $(dir $(wildcard $(srcdir)/*/Makefile))
 plugins		    := $(notdir $(sources:/=))
 binaries	    := $(addprefix $(builddir)/, $(plugins))
+cleaned		    := $(addprefix clean/, $(plugins))
 installed	    := $(addprefix install/, $(plugins))
 deleted		    := $(addprefix delete/, $(plugins))
 
@@ -42,6 +43,14 @@ $(plugins) : % : $(builddir)/%
 
 $(binaries) : $(builddir)/% : $(srcdir)/%/Makefile
 	make -C $(srcdir)/$*
+
+.PHONY: $(cleaned)
+$(cleaned) : clean/% : 
+	make -C $(srcdir)/$* clean || true
+
+.PHONY: clean
+clean : $(cleaned)
+	$(rmdir) $(builddir)
 
 .PHONY: $(installed)
 $(installed) : install/% : $(builddir)/%
@@ -57,5 +66,5 @@ $(deleted) : delete/% :
 
 .PHONY: delete
 delete : $(deleted)
-	$(rmdir) $(builddir)
+	
 
