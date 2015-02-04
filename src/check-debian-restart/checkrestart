@@ -4,7 +4,6 @@ set -euf
 
 readonly save_stdout=7
 eval "exec $save_stdout>&1"
-readonly cache_file="/var/cache/nagios3/$(basename "$0").cache"
 readonly conf_file='/etc/default/checkrestart'
 readonly ret_crit=2
 readonly ret_warn=1
@@ -65,7 +64,5 @@ else
     ret="$ret_ok"
 fi
 
-{
-    echo "$ret"
-    echo "${res:-OK}" | paste -d, -s
-} > "$cache_file"
+echo "$ret"
+echo "$res"
