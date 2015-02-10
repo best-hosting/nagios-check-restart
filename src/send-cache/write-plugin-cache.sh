@@ -1,9 +1,6 @@
 #!/bin/sh
 
-# Args:
-# 1 - cache file path.
-# 2 - plugin command.
-# 3.. - plugin args.
+# Usage: $0 [--cache path] [plugin to execute with args..]
 
 set -euf
 
@@ -22,11 +19,57 @@ plugin=''
 ret="$ret_ok"
 res=''
 
-cache_file="$1"
-shift
+error()
+{
+    local OIFS="$IFS"
+    IFS=','
+    echo "Error: $(basename $0): $*" 1>&2
+    IFS="$OIFS"
+}
+usage()
+{
+    echo "Usage: $(basename $0) [--cache path] [plugin to execute with args..]" 1>&2
+}
+
+if [ $# -eq 0 ]; then
+    usage
+    exit 1
+fi
+# All options must be before non-option arguments. Use '--' to terminate
+# option list explicitly.
+while [ $# -gt 0 ]; do
+    case "$1" in
+      '--help' )
+	usage
+	exit 1
+      ;;
+      '--cache' )
+	if [ -z "${2:-}" ]; then
+	    error "Cache file path can't be empty."
+	    exit 1
+	fi
+	cache_file="$2"
+	shift 2
+      ;;
+      '--' )
+	shift
+	break
+      ;;
+      * )
+	if [ -z "${1:-}" ]; then
+	    error "Plugin path can't be empty."
+	    exit 1
+	fi
+	plugin="$1"
+	shift
+	break
+    esac
+done
+readonly plugin
 
 
 ### Check args.
+cache_file="${cache_file:-${plugin:+$(basename "$plugin").cache}}"
 # Default cache directory, if path is relative.
 if [ "${cache_file#.}" != "$cache_file" ]; then
     cache_file="$(pwd)/$cache_file"
@@ -36,21 +79,17 @@ fi
 readonly cache_file
 
 if [ ! -d "$(dirname "$cache_file")" ]; then
-    echo "$0: Error: cache directory $(dirname "$cache_file") does not exist." 1>&2
+    error "Cache directory $(dirname "$cache_file") does not exist."
     exit 1
 fi
 
 
 ### Main.
-ret="$ret_ok"
-res=''
 
-plugin="${1:-}"
 # `type` can't handle only relative path without leading dot. But i don't want
 # to handle it at all.
 if type "$plugin" >/dev/null 2>&1; then
-    shift
-    res="$("$plugin" "$@")" || ret="$?"
+    res="$("$plugin" "$@" 2>&1)" || ret="$?"
 else
     ret="$ret_unkn"
     res="Can't execute plugin '$plugin'"
