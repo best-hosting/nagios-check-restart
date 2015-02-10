@@ -1,17 +1,74 @@
 #!/bin/sh
 
+# Usage: $0 [--stdout-to-fd FD] [any /usr/sbin/checkrestart args]
+
 set -euf
 
-readonly save_stdout=7
-eval "exec $save_stdout>&1"
-readonly conf_file='/etc/default/checkrestart'
-readonly ret_crit=2
-readonly ret_warn=1
-readonly ret_ok=0
 readonly True=1
 readonly False=0
 readonly nl='
 '
+
+# Nagios return codes.
+readonly ret_unkn=3
+readonly ret_crit=2
+readonly ret_warn=1
+readonly ret_ok=0
+
+conf_file='/etc/default/checkrestart'
+
+save_stdout=''
+kern_inst=''
+cant_write_fd="$False"
+kern_upgraded="$False"
+ret="$ret_ok"
+res=''
+
+error()
+{
+    local OIFS="$IFS"
+    IFS=','
+    echo "Error: $(basename $0): $*" 1>&2
+    IFS="$OIFS"
+}
+usage()
+{
+    echo "Usage: $(basename $0) [--stdout-to-fd FD] [/usr/sbin/checkrestart args..]" 1>&2
+}
+
+
+# All options must be before non-option arguments. Use '--' to terminate
+# option list explicitly.
+while [ $# -gt 0 ]; do
+    case "$1" in
+      '--stdout-to-fd' )
+        if [ -z "${2:-}" ]; then
+            error "Fd can't be empty."
+            exit 1
+        fi
+        save_stdout="$2"
+        shift 2
+      ;;
+      '--config' )
+        if [ -z "${2:-}" ]; then
+            error "Config path can't be empty."
+            exit 1
+        fi
+        conf_file="$2"
+        shift 2
+      ;;
+      '--' )
+	shift
+	break
+      ;;
+      * )
+        break
+      ;;
+    esac
+done
+conf_file="${conf_file:-/etc/default/checkrestart}"
+readonly save_stdout
+readonly conf_file
 
 if [ -e "$conf_file" ]; then
     . "$conf_file"
@@ -42,10 +99,16 @@ then
 fi
 
 # Expect OPTIONS variable from $conf_file.
-res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" \
-    | tee "/proc/self/fd/$save_stdout" \
-    | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$'
-)" || true
+res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" 2>&1)" || true
+if [ -n "$save_stdout" ]; then
+    if [ -w "/proc/self/fd/$save_stdout" ]; then
+        echo "$res" 1>&$save_stdout
+    else
+        cant_write_fd="$True"
+    fi
+fi
+res="$(echo "$res" \
+        | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$')"
 
 n_progs="$(echo "$res" | sed -n -e'/program/s/^(\([[:digit:]]\+\).*/\1/p')"
 n_pkgs="$(echo "$res" | sed -n -e'/package/s/^\.*(\([[:digit:]]\+\).*/\1/p')"
@@ -53,16 +116,23 @@ n_progs="${n_progs:-0}"
 n_pkgs="${n_pkgs:-0}"
 if [ "$kern_upgraded" = "$True" ]; then
     echo "Kernel have been upgraded."
-    res="${res:+kernel upgraded, $res}"
+    res="${res:+kernel upgraded$nl$res}"
     res="${res:-kernel upgraded}"
     ret="$ret_crit"
 elif [ "$n_pkgs" -gt 0 ]; then
     ret="$ret_crit"
 elif [ "$n_progs" -gt 0 ]; then
     ret="$ret_warn"
-else
-    ret="$ret_ok"
+fi
+if [ "$cant_write_fd" = "$True" ]; then
+    e="$(error "Can't save stdout to fd '$save_stdout'" 2>&1)"
+    res="${res:+$res$nl$e}"
+    res="${res:-$nl$e}"
+    if [ "$ret" -lt "$ret_warn" ]; then
+        ret="$ret_warn"
+    fi
 fi
 
-echo "$ret"
 echo "$res"
+exit "$ret"
+
