@@ -19,8 +19,7 @@ else
 endif
 srcdir		    := .
 
-# FIXME: Rename to check_restart .
-project_top	    := $(plugindir)/checkrestart
+project_top	    := $(plugindir)/check_debian_restart
 project_bin	    := $(sbindir)/checkrestart
 project_nrpe	    := $(confdir_nrpe)/check-debian-restart.cfg
 project_apt	    := $(confdir_apt)/99checkrestart
