@@ -1,4 +1,15 @@
 
+# Usage.
+#
+# For each project $(proj) define variable 'project_$(proj)' containing
+# list of files (full pathes) i want to install. Then if files should be
+# installed as "program" (with 'x' permissions) add project to $(programs)
+# variable, if as "data" (without 'x' permissions) - to $(data) variable.
+#
+# And then include this Makefile. It'll automatically generate build_x,
+# clean_x, install_x and remove_x targets for every project x listed in
+# $(programs) and $(data).
+
 # Defaults for programs.
 # Do not use `cp -a`, because fallback build target is to just copy source
 # file to build directory, and if source has hardlinks, `cp -a` will preserve
