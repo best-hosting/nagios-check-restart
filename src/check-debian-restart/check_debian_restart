@@ -99,7 +99,7 @@ then
 fi
 
 # Expect OPTIONS variable from $conf_file.
-res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" 2>&1)" || true
+res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" 2>&1)"
 if [ -n "$save_stdout" ]; then
     if [ -w "/proc/self/fd/$save_stdout" ]; then
         echo "$res" 1>&$save_stdout
@@ -108,7 +108,8 @@ if [ -n "$save_stdout" ]; then
     fi
 fi
 res="$(echo "$res" \
-        | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$')"
+        | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$')" \
+    || true
 
 n_progs="$(echo "$res" | sed -n -e'/program/s/^(\([[:digit:]]\+\).*/\1/p')"
 n_pkgs="$(echo "$res" | sed -n -e'/package/s/^\.*(\([[:digit:]]\+\).*/\1/p')"
