@@ -1,70 +1,19 @@
 
-# Programs.
-cp		    ?= cp -av
-rm		    ?= rm -f -v
-rmdir		    ?= rmdir -v --ignore-fail-on-non-empty
-mkdir		    ?= mkdir -pv
-install		    ?= install
-install_program     ?= $(install) -v -m 0755
-install_data	    ?= $(install) -v -m 0644
-mkinstalldir	    ?= $(install) -v -d -m 0755
-
-# Installation directories. No trailing slash.
+# Defaults for installation directories. No trailing slash.
 prefix		    ?= /usr/local
-libdir		    ?= $(prefix)/lib/nagios/plugins
-confdir 	    ?= $(prefix)/etc
-confdir_nrpe 	    ?= $(confdir)/nagios/nrpe.d
 
 srcdir		    := src
-# builddir is used by plugin Makefile, and, thus, must contain full path.
+# $(builddir) is passed to plugin's Makefile and, thus, must contain full
+# path.
 builddir	    := $(CURDIR)/build
 export builddir
 
 # Find names of all directories containing Makefile-s in $(srcdir) and take
-# them as plugin names. Variables here mean not real sources, binaries and
-# installed files of plugin (this Makefile can't know them), but rather
-# plugin's source directory (containing its Makefile), plugin's build
-# directory and non-existent 'install/plugin_name' and 'delete/plugin'
-# directories, which denote plugin's real 'install' and 'delete' targets
-# correspondingly.
-sources		    := $(dir $(wildcard $(srcdir)/*/Makefile))
-plugins		    := $(notdir $(sources:/=))
-binaries	    := $(addprefix $(builddir)/, $(plugins))
-cleaned		    := $(addprefix clean/, $(plugins))
-installed	    := $(addprefix install/, $(plugins))
-deleted		    := $(addprefix delete/, $(plugins))
+# them as project names for generic build. This projects does not have
+# installed files (simply because i don't know them here; this is why i don't
+# define project_x variables here), so i rely on sub-make calls made by
+# generic build for all phony build_x/clean_x and install_x/remove_x targets.
+data	:= $(notdir $(patsubst %/Makefile,%,$(wildcard $(srcdir)/*/Makefile)))
 
-all : $(plugins)
-	
-
-# Target plugin by names.
-$(plugins) : % : $(builddir)/%
-	
-
-$(binaries) : $(builddir)/% : $(srcdir)/%/Makefile
-	make -C $(srcdir)/$*
-
-.PHONY: $(cleaned)
-$(cleaned) : clean/% : 
-	make -C $(srcdir)/$* clean || true
-
-.PHONY: clean
-clean : $(cleaned)
-	$(rmdir) $(builddir)
-
-.PHONY: $(installed)
-$(installed) : install/% : $(builddir)/%
-	make -C $(srcdir)/$* install
-
-.PHONY: install
-install : $(installed)
-	
-
-.PHONY: $(deleted)
-$(deleted) : delete/% : 
-	make -C $(srcdir)/$* delete || true
-
-.PHONY: delete
-delete : $(deleted)
-	
+include src/Makefile.common
 
