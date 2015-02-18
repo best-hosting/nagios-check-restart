@@ -2,6 +2,10 @@
 
 set -euf
 
+# Args:
+# 1 - cache file path.
+# 2 - cache expiration time.
+
 # Cache:
 # Line 1 is return code.
 # All following lines are plugin stdout.
