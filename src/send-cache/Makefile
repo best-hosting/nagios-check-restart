@@ -33,6 +33,12 @@ binaries	    := $(addprefix $(builddir)/, $(basename $(sources)))
 all : $(binaries)
 	
 
+build : all
+	
+
+remove : delete
+	
+
 $(binaries) : $(builddir)/% : %.sh
 	mkdir -pv $(builddir)
 	cp $< $@
@@ -40,7 +46,7 @@ $(binaries) : $(builddir)/% : %.sh
 .PHONY: clean
 clean : 
 	$(rm) $(binaries)
-	$(rmdir) $(builddir)
+	$(rmdir) $(builddir) || true
 
 $(installed) : $(libdir)/% : $(builddir)/%
 	$(install_program) -t $(libdir) $<

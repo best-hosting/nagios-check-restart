@@ -10,8 +10,6 @@ confdir_apt 	    ?= $(confdir)/apt/apt.conf.d
 # Use build directory in current directory, if invoked manually, and in
 # central build directory otherwise.
 ifeq ($(MAKELEVEL), 0)
-    # FIXME: Why $(CURDIR) ?
-    #builddir	    := $(CURDIR)/build
     builddir	    := build
 else
     builddir	    ?= build
