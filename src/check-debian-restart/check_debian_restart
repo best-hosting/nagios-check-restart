@@ -116,7 +116,7 @@ n_pkgs="$(echo "$res" | sed -n -e'/package/s/^\.*(\([[:digit:]]\+\).*/\1/p')"
 n_progs="${n_progs:-0}"
 n_pkgs="${n_pkgs:-0}"
 if [ "$kern_upgraded" = "$True" ]; then
-    echo "Kernel have been upgraded."
+    echo "Kernel have been upgraded." 1>&$save_stdout
     res="${res:+kernel upgraded$nl$res}"
     res="${res:-kernel upgraded}"
     ret="$ret_crit"
