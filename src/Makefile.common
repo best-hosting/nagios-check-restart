@@ -48,6 +48,11 @@ $(builddir)/% :: $(srcdir)/%.sh
 	$(mkdir) $(dir $@)
 	$(cp) $< $@
 
+$(builddir)/% :: $(srcdir)/%.php
+	@echo Build php
+	$(mkdir) $(dir $@)
+	$(cp) $< $@
+
 # No-op for now.
 #$(builddir)/% :: $(srcdir)/%.m4
 #	@echo Build m4
