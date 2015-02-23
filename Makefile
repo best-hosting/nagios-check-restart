@@ -5,7 +5,12 @@ prefix		    ?= /usr/local
 srcdir		    := src
 # $(builddir) is passed to plugin's Makefile and, thus, must contain full
 # path.
-builddir	    := $(CURDIR)/build
+ifeq ($(MAKELEVEL), 0)
+    builddir	    := $(CURDIR)/build
+else
+    builddir	    ?= build
+    builddir	    := $(builddir)/$(notdir $(CURDIR))
+endif
 export builddir
 
 # Find names of all directories containing Makefile-s in $(srcdir) and take
