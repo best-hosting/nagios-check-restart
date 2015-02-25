@@ -11,6 +11,9 @@ confdir_apt 	    ?= $(confdir)/apt/apt.conf.d
 # path.
 ifeq ($(MAKELEVEL), 0)
     builddir	    := $(CURDIR)/build
+    # I build send-cache only, if this is top-level project.  Otherwise,
+    # parent project should include send-cache explicitly.
+    data	    := send-cache
 else
     builddir	    ?= build
     builddir	    := $(builddir)/$(notdir $(CURDIR))
@@ -25,7 +28,7 @@ project_apt	    := $(confdir_apt)/99checkrestart
 
 # send-cache is dependency and is included here as 'git subtree'.
 programs	    := top bin
-data		    := apt nrpe send-cache
+data		    := $(data) apt nrpe
 
 include ./src/common-build/Makefile.common
 
