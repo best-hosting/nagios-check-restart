@@ -12,11 +12,11 @@ else
     builddir	    ?= build
     builddir	    := $(builddir)/$(notdir $(CURDIR))
 endif
-srcdir		    := .
+srcdir		    := src
 
-project_top	    := $(plugindir)/send-cache $(sbindir)/write-plugin-cache
+project_top	    := $(plugindir)/send_cache $(sbindir)/write-plugin-cache
 
 programs	    := top
 
-include ../Makefile.common
+include ./src/common-build/Makefile.common
 
