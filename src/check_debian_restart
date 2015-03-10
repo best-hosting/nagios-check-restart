@@ -1,0 +1,139 @@
+#!/bin/sh
+
+# Usage: $0 [--stdout-to-fd FD] [any /usr/sbin/checkrestart args]
+
+set -euf
+
+readonly True=1
+readonly False=0
+readonly nl='
+'
+
+# Nagios return codes.
+readonly ret_unkn=3
+readonly ret_crit=2
+readonly ret_warn=1
+readonly ret_ok=0
+
+conf_file='/etc/default/checkrestart'
+
+save_stdout=''
+kern_inst=''
+cant_write_fd="$False"
+kern_upgraded="$False"
+ret="$ret_ok"
+res=''
+
+error()
+{
+    local OIFS="$IFS"
+    IFS=','
+    echo "Error: $(basename $0): $*" 1>&2
+    IFS="$OIFS"
+}
+usage()
+{
+    echo "Usage: $(basename $0) [--stdout-to-fd FD] [/usr/sbin/checkrestart args..]" 1>&2
+}
+
+
+# All options must be before non-option arguments. Use '--' to terminate
+# option list explicitly.
+while [ $# -gt 0 ]; do
+    case "$1" in
+      '--stdout-to-fd' )
+        if [ -z "${2:-}" ]; then
+            error "Fd can't be empty."
+            exit 1
+        fi
+        save_stdout="$2"
+        shift 2
+      ;;
+      '--config' )
+        if [ -z "${2:-}" ]; then
+            error "Config path can't be empty."
+            exit 1
+        fi
+        conf_file="$2"
+        shift 2
+      ;;
+      '--' )
+	shift
+	break
+      ;;
+      * )
+        break
+      ;;
+    esac
+done
+conf_file="${conf_file:-/etc/default/checkrestart}"
+readonly save_stdout
+readonly conf_file
+
+if [ -e "$conf_file" ]; then
+    . "$conf_file"
+fi
+
+# Extract all strings fulfilling debian version number requirments, and output
+# them each at separate line (so `grep -F -x can be used to match them).
+extract_deb_versions()
+{
+    echo "$1" | sed -e'
+	s/\([[:digit:]][[:alnum:].+:~-]*\)/\n&\n/;
+	s/[^\n]*\n//;
+	/^$/!P;
+	D;
+    '
+}
+
+# Check kernel upgrade.
+kern_inst="$(dpkg-query -f '${Version}\n' -W "linux-image-$(uname -r)")"
+kern_upgraded=$False
+# Here extract_deb_versions() will extract more, than just kernel version from
+# /proc/version, but i assume, that new kernel version will never match with
+# other version numbers in that string (e.g. gcc version).
+if ! extract_deb_versions "$(cat /proc/version)" \
+	| grep -q -x -F -e "$kern_inst";
+then
+    kern_upgraded=$True
+fi
+
+# Expect OPTIONS variable from $conf_file.
+res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" 2>&1)"
+if [ -n "$save_stdout" ]; then
+    if [ -w "/proc/self/fd/$save_stdout" ]; then
+        echo "$res" 1>&$save_stdout
+    else
+        cant_write_fd="$True"
+    fi
+fi
+res="$(echo "$res" \
+        | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$')" \
+    || true
+
+n_progs="$(echo "$res" | sed -n -e'/program/s/^(\([[:digit:]]\+\).*/\1/p')"
+n_pkgs="$(echo "$res" | sed -n -e'/package/s/^\.*(\([[:digit:]]\+\).*/\1/p')"
+n_progs="${n_progs:-0}"
+n_pkgs="${n_pkgs:-0}"
+if [ "$kern_upgraded" = "$True" ]; then
+    echo "Kernel have been upgraded." 1>&$save_stdout
+    res="${res:+kernel upgraded$nl$res}"
+    res="${res:-kernel upgraded}"
+    ret="$ret_crit"
+elif [ "$n_pkgs" -gt 0 ]; then
+    ret="$ret_crit"
+elif [ "$n_progs" -gt 0 ]; then
+    ret="$ret_warn"
+fi
+if [ "$cant_write_fd" = "$True" ]; then
+    e="$(error "Can't save stdout to fd '$save_stdout'" 2>&1)"
+    res="${res:+$res$nl$e}"
+    res="${res:-$nl$e}"
+    if [ "$ret" -lt "$ret_warn" ]; then
+        ret="$ret_warn"
+    fi
+fi
+
+echo "$res"
+exit "$ret"
+

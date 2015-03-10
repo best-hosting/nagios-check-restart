@@ -15,7 +15,6 @@ src/*/build
 # logs amd tmp files
 *.tmp
 *.log
-nohup.out
 
 # tmp dirs
 tmp/

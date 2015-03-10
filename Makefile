@@ -1,70 +1,34 @@
 
-# Programs.
-cp		    ?= cp -av
-rm		    ?= rm -f -v
-rmdir		    ?= rmdir -v --ignore-fail-on-non-empty
-mkdir		    ?= mkdir -pv
-install		    ?= install
-install_program     ?= $(install) -v -m 0755
-install_data	    ?= $(install) -v -m 0644
-mkinstalldir	    ?= $(install) -v -d -m 0755
-
-# Installation directories. No trailing slash.
+# Defaults for installation directories. No trailing slash.
 prefix		    ?= /usr/local
-libdir		    ?= $(prefix)/lib/nagios/plugins
-confdir 	    ?= $(prefix)/etc
+sbindir		    ?= $(prefix)/sbin
+plugindir	    ?= $(prefix)/lib/nagios/plugins
+confdir 	    ?= /etc
 confdir_nrpe 	    ?= $(confdir)/nagios/nrpe.d
+confdir_apt 	    ?= $(confdir)/apt/apt.conf.d
 
-srcdir		    := src
-# builddir is used by plugin Makefile, and, thus, must contain full path.
-builddir	    := $(CURDIR)/build
+# $(builddir) is passed to send-cache's Makefile and, thus, must contain full
+# path.
+ifeq ($(MAKELEVEL), 0)
+    builddir	    := $(CURDIR)/build
+    # I build send-cache only, if this is top-level project.  Otherwise,
+    # parent project should include send-cache explicitly.
+    data	    := send-cache
+else
+    builddir	    ?= build
+    builddir	    := $(builddir)/$(notdir $(CURDIR))
+endif
 export builddir
+srcdir		    := src
 
-# Find names of all directories containing Makefile-s in $(srcdir) and take
-# them as plugin names. Variables here mean not real sources, binaries and
-# installed files of plugin (this Makefile can't know them), but rather
-# plugin's source directory (containing its Makefile), plugin's build
-# directory and non-existent 'install/plugin_name' and 'delete/plugin'
-# directories, which denote plugin's real 'install' and 'delete' targets
-# correspondingly.
-sources		    := $(dir $(wildcard $(srcdir)/*/Makefile))
-plugins		    := $(notdir $(sources:/=))
-binaries	    := $(addprefix $(builddir)/, $(plugins))
-cleaned		    := $(addprefix clean/, $(plugins))
-installed	    := $(addprefix install/, $(plugins))
-deleted		    := $(addprefix delete/, $(plugins))
+project_top	    := $(plugindir)/check_debian_restart
+project_bin	    := $(sbindir)/checkrestart
+project_nrpe	    := $(confdir_nrpe)/check-debian-restart.cfg
+project_apt	    := $(confdir_apt)/99checkrestart
 
-all : $(plugins)
-	
+# send-cache is dependency and is included here as 'git subtree'.
+programs	    := top bin
+data		    := $(data) apt nrpe
 
-# Target plugin by names.
-$(plugins) : % : $(builddir)/%
-	
-
-$(binaries) : $(builddir)/% : $(srcdir)/%/Makefile
-	make -C $(srcdir)/$*
-
-.PHONY: $(cleaned)
-$(cleaned) : clean/% : 
-	make -C $(srcdir)/$* clean || true
-
-.PHONY: clean
-clean : $(cleaned)
-	$(rmdir) $(builddir)
-
-.PHONY: $(installed)
-$(installed) : install/% : $(builddir)/%
-	make -C $(srcdir)/$* install
-
-.PHONY: install
-install : $(installed)
-	
-
-.PHONY: $(deleted)
-$(deleted) : delete/% : 
-	make -C $(srcdir)/$* delete || true
-
-.PHONY: delete
-delete : $(deleted)
-	
+include ./src/common-build/Makefile.common
 
