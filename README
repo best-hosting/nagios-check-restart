@@ -1,18 +1,19 @@
-Contains two plugins:
-    1. send-cache is plugin for returning cache content to nagios. It may be
-       called through NRPE and is, effectively, equivalent to passive plugins.
-       The main drawback of passive plugins, is that it can update state of
-       other (passive?) plugin, just by specifying it in
-       PROCESS_SERVICE_CHECK_RESULT.  But by using "emulation" of passive
-       checks with send-cache active plugin, i can avoid such situation.
-    2. check-debian-restart is plugin for reporting does any service need
-       restart (using Debian's `checkrestart` utility). There is wrapper
-       script for `checkrestart` installed in /usr/local, which updates cache
-       file (it should be called all the time instead of real `checkrestart`,
-       otherwise cache file will not be updated). Also, apt hook is added,
-       thus cache updates occur after apt run. And, finally, this cache file
-       content reported to nagios using send-cache plugin through NRPE. Also,
-       checkrestart wrapper tries to guess kernel upgrades. If either kernel
-       has upgraded or real `checkrestart` reports at least one package
-       requiring restart, wrapper tells "critical" to nagios. If only
-       processes have been found, wrapper tells "warning".
+Git subtrees:
+src/send-cache/		    - nagios send-cache plugin repostiry.
+src/common-build/	    - common-build repository .
+
+check-debian-restart is plugin for reporting does any service needs restart
+(using Debian's `checkrestart` utility). There is wrapper script for
+`checkrestart` installed in /usr/local, which caches checkrestart result using
+write-plugin-cache from send-cache plugin (this wrapper should be called all the time
+instead of real `checkrestart`, otherwise cache file will not be updated).
+Also, apt hook is added, thus cache update occurs after apt have run. And,
+finally, cache file content may be reported to nagios using send-cache plugin
+through NRPE. send-cache plugin included here as git subtree .
+
+Also, check-debian-restart tries to guess kernel upgrades. If either kernel
+was upgraded or real `checkrestart` reported at least one package requiring
+restart, wrapper tells "critical" to nagios. If only processes have been
+found, wrapper tells "warning".
+
+For now plugin work correctly only on Debian.
