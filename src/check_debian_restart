@@ -58,8 +58,8 @@ while [ $# -gt 0 ]; do
         shift 2
       ;;
       '--' )
-	shift
-	break
+        shift
+        break
       ;;
       * )
         break
@@ -79,10 +79,10 @@ fi
 extract_deb_versions()
 {
     echo "$1" | sed -e'
-	s/\([[:digit:]][[:alnum:].+:~-]*\)/\n&\n/;
-	s/[^\n]*\n//;
-	/^$/!P;
-	D;
+        s/\([[:digit:]][[:alnum:].+:~-]*\)/\n&\n/;
+        s/[^\n]*\n//;
+        /^$/!P;
+        D;
     '
 }
 
@@ -93,7 +93,7 @@ kern_upgraded=$False
 # /proc/version, but i assume, that new kernel version will never match with
 # other version numbers in that string (e.g. gcc version).
 if ! extract_deb_versions "$(cat /proc/version)" \
-	| grep -q -x -F -e "$kern_inst";
+        | grep -q -x -F -e "$kern_inst";
 then
     kern_upgraded=$True
 fi

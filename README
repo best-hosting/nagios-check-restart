@@ -1,6 +1,6 @@
 Git subtrees:
-src/send-cache/		    - nagios send-cache plugin repostiry.
-src/common-build/	    - common-build repository .
+src/send-cache/             - nagios send-cache plugin repository.
+src/common-build/           - common-build repository .
 
 check-debian-restart is plugin for reporting does any service needs restart
 (using Debian's `checkrestart` utility). There is wrapper script for
