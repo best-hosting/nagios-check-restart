@@ -23,6 +23,7 @@ cant_write_fd="$False"
 kern_upgraded="$False"
 ret="$ret_ok"
 res=''
+cmd_checkrestart='/usr/sbin/checkrestart'
 
 error()
 {
@@ -69,6 +70,9 @@ done
 conf_file="${conf_file:-/etc/default/checkrestart}"
 readonly save_stdout
 readonly conf_file
+if [ "$(id -u)" != 0 ]; then
+    cmd_checkrestart="sudo$nl$cmd_checkrestart"
+fi
 
 if [ -e "$conf_file" ]; then
     . "$conf_file"
@@ -111,7 +115,7 @@ then
 fi
 
 # Expect OPTIONS variable from $conf_file.
-res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" 2>&1)"
+res="$($cmd_checkrestart ${OPTIONS:-} "$@" 2>&1)"
 write_to_saved_stdout "$res"
 res="$(echo "$res" \
         | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$')" \
