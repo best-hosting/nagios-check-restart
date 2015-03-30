@@ -23,6 +23,7 @@ cant_write_fd="$False"
 kern_upgraded="$False"
 ret="$ret_ok"
 res=''
+cmd_checkrestart='/usr/sbin/checkrestart'
 
 error()
 {
@@ -69,6 +70,9 @@ done
 conf_file="${conf_file:-/etc/default/checkrestart}"
 readonly save_stdout
 readonly conf_file
+if [ "$(id -u)" != 0 ]; then
+    cmd_checkrestart="sudo$nl$cmd_checkrestart"
+fi
 
 if [ -e "$conf_file" ]; then
     . "$conf_file"
@@ -86,6 +90,18 @@ extract_deb_versions()
     '
 }
 
+# Write all arguments separated by first IFS char to $save_stdout, if defined.
+write_to_saved_stdout()
+{
+    if [ -n "$save_stdout" ]; then
+        if [ -w "/proc/self/fd/$save_stdout" ]; then
+            echo "$*" 1>&$save_stdout
+        else
+            cant_write_fd="$True"
+        fi
+    fi
+}
+
 # Check kernel upgrade.
 kern_inst="$(dpkg-query -f '${Version}\n' -W "linux-image-$(uname -r)")"
 kern_upgraded=$False
@@ -99,14 +115,8 @@ then
 fi
 
 # Expect OPTIONS variable from $conf_file.
-res="$(/usr/sbin/checkrestart ${OPTIONS:-} "$@" 2>&1)"
-if [ -n "$save_stdout" ]; then
-    if [ -w "/proc/self/fd/$save_stdout" ]; then
-        echo "$res" 1>&$save_stdout
-    else
-        cant_write_fd="$True"
-    fi
-fi
+res="$($cmd_checkrestart ${OPTIONS:-} "$@" 2>&1)"
+write_to_saved_stdout "$res"
 res="$(echo "$res" \
         | grep -e'^([[:digit:]]\+ distinct \(programs\?\|packages\?\))$')" \
     || true
@@ -116,7 +126,7 @@ n_pkgs="$(echo "$res" | sed -n -e'/package/s/^\.*(\([[:digit:]]\+\).*/\1/p')"
 n_progs="${n_progs:-0}"
 n_pkgs="${n_pkgs:-0}"
 if [ "$kern_upgraded" = "$True" ]; then
-    echo "Kernel have been upgraded." 1>&$save_stdout
+    write_to_saved_stdout "Kernel have been upgraded."
     res="${res:+kernel upgraded$nl$res}"
     res="${res:-kernel upgraded}"
     ret="$ret_crit"

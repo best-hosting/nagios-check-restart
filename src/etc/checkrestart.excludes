@@ -1,0 +1,7 @@
+^/etc/.*\.snap \(deleted\)$
+^/etc/\.group\.[0-9]+ \(deleted\)$
+^/etc/\.passwd\.[0-9]+ \(deleted\)$
+^/usr/share/phpmyadmin/config.inc.php(.snap)? \(deleted\)$
+^/usr/share/spamassassin/local.cf(.snap)? \(deleted\)$
+^/usr/local/ispmgr/.*\.snap \(deleted\)$
+^/var/lib/nginx/
